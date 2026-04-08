@@ -61,13 +61,16 @@ async def categorize_transactions(file: UploadFile = File(...)):
         return json.loads(response.text)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Tekoaly epaonnistui datan kasittelyssa")
-    
+
 if os.path.exists("dist"):
     app.mount("/assets", StaticFiles(directory="dist/assets"), name="assets")
 
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
-        # Jos polku ei ala kohdalla api, palauta index.html
         if not full_path.startswith("api"):
             return FileResponse("dist/index.html")
         raise HTTPException(status_code=404)
+else:
+    @app.get("/")
+    async def root():
+        return {"error": "Frontend dist kansiota ei loydy. Varmista Dockerin build vaihe."}
