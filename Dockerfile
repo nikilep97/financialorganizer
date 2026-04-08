@@ -1,7 +1,7 @@
 # Rakennetaan frontend
 FROM node:20 AS build-stage
 WORKDIR /frontend
-COPY package*.json ./
+COPY frontend/package*.json ./
 RUN npm install
 COPY . .
 RUN npm run build
