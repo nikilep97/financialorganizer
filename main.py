@@ -1,6 +1,6 @@
 import os
 import json
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, HTTPException
 import google.generativeai as genai
 from dotenv import load_dotenv
 
@@ -12,8 +12,14 @@ model = genai.GenerativeModel("gemini-2.5-flash")
 
 @app.post("/api/categorize")
 async def categorize_transactions(file: UploadFile = File(...)):
-    content = await file.read()
-    csv_text = content.decode("utf-8")
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Vain CSV tiedostot ovat sallittuja")
+
+    try:
+        content = await file.read()
+        csv_text = content.decode("utf-8")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Tiedoston lukeminen epäonnistui")
 
     prompt = f"""
     Analysoi alla oleva CSV muotoinen tiliote.
@@ -42,10 +48,13 @@ async def categorize_transactions(file: UploadFile = File(...)):
     {csv_text}
     """
 
-    response = model.generate_content(
-        prompt,
-        generation_config=genai.GenerationConfig(
-            response_mime_type="application/json"
+    try:
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.GenerationConfig(
+                response_mime_type="application/json"
+            )
         )
-    )
-    return json.loads(response.text)
+        return json.loads(response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Tekoäly epäonnistui datan käsittelyssä")
