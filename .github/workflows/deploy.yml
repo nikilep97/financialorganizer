@@ -1,0 +1,30 @@
+name: Build and Deploy to Azure
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hae koodi
+        uses: actions/checkout@v3
+
+      - name: Kirjaudu Azure Container Registryyn
+        uses: azure/docker-login@v1
+        with:
+          login-server: financialorganizerrg.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Rakenna ja laheta Docker kontti
+        run: |
+          docker build -t financialorganizerrg.azurecr.io/talouskategorisoija:${{ github.sha }} .
+          docker push financialorganizerrg.azurecr.io/talouskategorisoija:${{ github.sha }}
+
+      - name: Julkaise Azure Web Appiin
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'FinancialOrganizer'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          images: 'financialorganizerrg.azurecr.io/talouskategorisoija:${{ github.sha }}'
