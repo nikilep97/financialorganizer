@@ -58,9 +58,12 @@ async def categorize_transactions(file: UploadFile = File(...)):
                 response_mime_type="application/json"
             )
         )
-        return json.loads(response.text)
+        cleaned_text = response.text.replace("```json", "").replace("```", "").strip()
+        return json.loads(cleaned_text)
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Tekoaly epaonnistui datan kasittelyssa")
+        # Palautetaan tarkka virhesyy selaimeen ja lokeihin
+        print(f"Palvelinvirhe: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if os.path.exists("dist"):
     app.mount("/assets", StaticFiles(directory="dist/assets"), name="assets")
